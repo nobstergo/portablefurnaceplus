@@ -1,0 +1,8 @@
+/target
+/.idea
+*.iml
+*.log
+/.classpath
+/libs/
+/.vscode/
+/showcase
