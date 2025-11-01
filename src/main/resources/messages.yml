@@ -1,5 +1,5 @@
-furnace-linked: "&aLinked Portable Furnace to &e%x%&a, &e%y%&a, &e%z%&a in world &e%world%"
-furnace-unlinked: "&cThis Portable Furnace isn’t linked to any furnace. Shift-right-click a furnace to link it first."
+furnace-linked: "&aLinked Portable Furnace to &e%x%&a, &e%y%&a, &e%z%&a in &e%world%"
+furnace-unlinked: "&cThis Portable Furnace isn’t linked to any furnace. Shift-click a furnace to link it first."
 item-given: "&aGave portable furnace to &e{player}&a."
 not-owner: "&cYou don't own this furnace."
 player-not-online: "&cThat player isn't online."
