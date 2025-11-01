@@ -6,6 +6,11 @@ Ever wished you could smelt your stuff on the go?
 ---
 https://youtu.be/BSIP-4pAFGM
 
+### Crafting
+<img width="1037" height="689" alt="image" src="https://github.com/user-attachments/assets/be560886-7b56-4a33-9683-48e253f20661" />
+
+---
+
 ### Features
 - Fully functional real furnace GUI
 - Link to a real furnace for remote smelting
