@@ -10,17 +10,15 @@ import java.io.InputStreamReader;
 public class yamlUpdate {
     public static void updateYaml(File file, JavaPlugin plugin, String resourceName) {
         try {
-            // Load current user file
             YamlConfiguration userConfig = YamlConfiguration.loadConfiguration(file);
 
-            // Load default file from JAR
             InputStream defaultStream = plugin.getResource(resourceName);
             if (defaultStream == null) return;
             YamlConfiguration defaultConfig = YamlConfiguration.loadConfiguration(
                     new InputStreamReader(defaultStream)
             );
 
-            // Copy any missing defaults into the user's config
+            // Copy missing defaults into config
             boolean changed = false;
             for (String key : defaultConfig.getKeys(true)) {
                 if (!userConfig.contains(key)) {

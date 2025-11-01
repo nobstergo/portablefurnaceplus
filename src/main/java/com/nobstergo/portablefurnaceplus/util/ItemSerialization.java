@@ -5,13 +5,11 @@ import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.io.BukkitObjectInputStream;
 import org.bukkit.util.io.BukkitObjectOutputStream;
-
 import java.io.*;
 import java.util.Base64;
 
 public class ItemSerialization {
 
-    /** Save ItemStack[] as Base64 into PDC under the provided key */
     public static void saveItemStackArray(PersistentDataContainer pdc, org.bukkit.NamespacedKey key, ItemStack[] stacks) throws IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         BukkitObjectOutputStream boos = new BukkitObjectOutputStream(baos);
@@ -25,7 +23,6 @@ public class ItemSerialization {
         pdc.set(key, PersistentDataType.STRING, base64);
     }
 
-    /** Load ItemStack[] from PDC key; returns null if key not present */
     public static ItemStack[] loadItemStackArray(PersistentDataContainer pdc, org.bukkit.NamespacedKey key) throws IOException, ClassNotFoundException {
         if (!pdc.has(key, PersistentDataType.STRING)) return null;
         String base64 = pdc.get(key, PersistentDataType.STRING);
