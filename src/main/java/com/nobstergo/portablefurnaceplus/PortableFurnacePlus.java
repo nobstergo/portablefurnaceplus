@@ -4,6 +4,9 @@ import com.nobstergo.portablefurnaceplus.commands.GiveCommand;
 import com.nobstergo.portablefurnaceplus.item.PortableFurnaceItem;
 import com.nobstergo.portablefurnaceplus.util.MessageFile;
 import com.nobstergo.portablefurnaceplus.util.yamlUpdate;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.ShapedRecipe;
+import org.bukkit.Material;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
@@ -24,7 +27,7 @@ public class PortableFurnacePlus extends JavaPlugin {
 
     private BukkitTask tickingTask;
 
-    // Store each player's linked furnace location
+    // Store furnace location
     private final HashMap<UUID, Location> playerLinkedFurnaces = new HashMap<>();
 
     @Override
@@ -37,6 +40,7 @@ public class PortableFurnacePlus extends JavaPlugin {
 
         MessageFile.setup(this);
         keyBase = new NamespacedKey(this, "portable_furnace_plus");
+        registerRecipe();
 
         // Register events
         getServer().getPluginManager().registerEvents(new PortableFurnaceItem(), this);
@@ -44,7 +48,6 @@ public class PortableFurnacePlus extends JavaPlugin {
         // Register command
         this.getCommand("portablefurnaceplus").setExecutor(new GiveCommand());
 
-        // Start ticking task (runs once per second)
         tickingTask = Bukkit.getScheduler().runTaskTimer(this, () -> {
             PortableFurnaceItem.processAllPlayers();
         }, 20L, 20L);
@@ -70,9 +73,26 @@ public class PortableFurnacePlus extends JavaPlugin {
             }
         }
         playerLinkedFurnaces.clear();
+        getLogger().info("PortableFurnacePlus disabled.");
     }
 
     public HashMap<UUID, Location> getPlayerLinkedFurnaces() {
         return playerLinkedFurnaces;
+    }
+
+    private void registerRecipe() {
+        ItemStack portableFurnace = PortableFurnaceItem.createPortableFurnaceFor(null);
+        ShapedRecipe recipe = new ShapedRecipe(
+                new NamespacedKey(this, "portable_furnace"),
+                portableFurnace
+        );
+
+        recipe.shape("IFI", "RFR", "IFI");
+        recipe.setIngredient('I', Material.IRON_INGOT);
+        recipe.setIngredient('R', Material.REDSTONE);
+        recipe.setIngredient('F', Material.FURNACE);
+
+        Bukkit.addRecipe(recipe);
+        getLogger().info("Portable furnace recipe registered.");
     }
 }
