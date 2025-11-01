@@ -3,6 +3,8 @@ package com.nobstergo.portablefurnaceplus.item;
 import com.nobstergo.portablefurnaceplus.PortableFurnacePlus;
 import com.nobstergo.portablefurnaceplus.util.ItemSerialization;
 import com.nobstergo.portablefurnaceplus.util.MessageFile;
+import org.bukkit.ChatColor;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -17,6 +19,7 @@ import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.block.Block;
+import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.block.Furnace;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -36,7 +39,7 @@ public class PortableFurnaceItem implements Listener {
 
     public static final int MAX_INPUT_STACK = 16;
 
-    // Map open GUI -> item so we can update GUI if backend changes
+    // Map open GUI 
     private static final Map<Inventory, ItemStack> openInventoryToItem = new WeakHashMap<>();
     // Store location of linked Furnace
     private static final Set<Location> forcedChunks = new HashSet<>();
@@ -65,7 +68,7 @@ public class PortableFurnaceItem implements Listener {
         forcedChunks.clear();
     }
 
-    // Minimal fuel times (ticks) — expand as needed
+    // Minimal fuel in ticks
     private static final Map<Material, Integer> FUEL_TIMES = new HashMap<>();
     static {
         FUEL_TIMES.put(Material.COAL, 1600);
@@ -75,25 +78,32 @@ public class PortableFurnaceItem implements Listener {
         FUEL_TIMES.put(Material.COAL_BLOCK, 16000);
     }
 
-    // Helper to create an item (callable via command)
+    // Create item
     public static ItemStack createPortableFurnaceFor(Player owner) {
-        ItemStack item = new ItemStack(Material.BRICK);
+        ItemStack item = new ItemStack(Material.FURNACE);
         ItemMeta meta = item.getItemMeta();
-        meta.setDisplayName("Portable Furnace+");
-        meta.setLore(Arrays.asList("Right-click in air to open (owner-only).", "Capacity: " + MAX_INPUT_STACK));
+        meta.setDisplayName(ChatColor.WHITE + "Portable Furnace");
+
         PersistentDataContainer pdc = meta.getPersistentDataContainer();
         pdc.set(KEY_VER, PersistentDataType.INTEGER, 1);
-        pdc.set(KEY_OWNER, PersistentDataType.STRING, owner.getUniqueId().toString());
-        // initialize empty inventory (3 slots)
+
+        // only set owner if player exists
+        if (owner != null) {
+            pdc.set(KEY_OWNER, PersistentDataType.STRING, owner.getUniqueId().toString());
+        }
+
+        // initialize empty inventory 
         try {
             ItemSerialization.saveItemStackArray(pdc, KEY_INV, new ItemStack[3]);
         } catch (Exception e) {
             e.printStackTrace();
         }
+
         pdc.set(KEY_BURN, PersistentDataType.INTEGER, 0);
         pdc.set(KEY_BURN_TOTAL, PersistentDataType.INTEGER, 0);
         pdc.set(KEY_COOK, PersistentDataType.INTEGER, 0);
-        pdc.set(KEY_COOK_TOTAL, PersistentDataType.INTEGER, 10); // default cook time (seconds)
+        pdc.set(KEY_COOK_TOTAL, PersistentDataType.INTEGER, 10); 
+
         item.setItemMeta(meta);
         return item;
     }
@@ -137,6 +147,21 @@ public class PortableFurnaceItem implements Listener {
         Player p = e.getPlayer();
         unloadIfOffline(p);
     }
+    
+    public static boolean isPortableFurnace(ItemStack item) {
+        if (item == null || !item.hasItemMeta()) return false;
+        ItemMeta meta = item.getItemMeta();
+        PersistentDataContainer pdc = meta.getPersistentDataContainer();
+        return pdc.has(KEY_VER, PersistentDataType.INTEGER);
+    }
+
+    @EventHandler
+    public void onBlockPlace(BlockPlaceEvent e) {
+        ItemStack item = e.getItemInHand();
+        if (PortableFurnaceItem.isPortableFurnace(item)) {
+            e.setCancelled(true);
+        }
+    }
 
     @EventHandler
     public void onUse(PlayerInteractEvent e) {
@@ -148,7 +173,7 @@ public class PortableFurnaceItem implements Listener {
         if (meta == null) return;
         PersistentDataContainer pdc = meta.getPersistentDataContainer();
 
-        // If player shift-right-clicks a furnace block, link it
+        // Link on shift-click
         if (e.getClickedBlock() != null && player.isSneaking()) {
             Block clicked = e.getClickedBlock();
             Material type = clicked.getType();
@@ -163,12 +188,12 @@ public class PortableFurnaceItem implements Listener {
             Location loc = clicked.getLocation();
             String locStr = loc.getWorld().getName() + "," + loc.getBlockX() + "," + loc.getBlockY() + "," + loc.getBlockZ();
 
-            // store link data
+            // store data
             pdc.set(KEY_LINKED_LOC, PersistentDataType.STRING, locStr);
             PortableFurnacePlus.INSTANCE.getPlayerLinkedFurnaces().put(player.getUniqueId(), loc);
             addForcedChunkIfOnline(player, loc);
 
-            // Ensure owner is set if not present
+            // Check owner is set if not present
             if (!pdc.has(KEY_OWNER, PersistentDataType.STRING)) {
                 pdc.set(KEY_OWNER, PersistentDataType.STRING, player.getUniqueId().toString());
             }
@@ -182,7 +207,7 @@ public class PortableFurnaceItem implements Listener {
             e.setCancelled(true);
         }
 
-        // Ownership check (only owner can open/use)
+        // Ownership check 
         if (pdc.has(KEY_OWNER, PersistentDataType.STRING)) {
             String ownerUuid = pdc.get(KEY_OWNER, PersistentDataType.STRING);
             if (!player.getUniqueId().toString().equals(ownerUuid)) {
@@ -191,7 +216,7 @@ public class PortableFurnaceItem implements Listener {
                 return;
             }
         } 
-        // If linked location exists, open the real furnace at that location
+        // Open real furnace at that location
         if (pdc.has(KEY_LINKED_LOC, PersistentDataType.STRING)) {
             String locStr = pdc.get(KEY_LINKED_LOC, PersistentDataType.STRING);
             String[] parts = locStr.split(",");
@@ -229,7 +254,7 @@ public class PortableFurnaceItem implements Listener {
             }
         }
 
-        // If not linked, show message instead of opening portable GUI
+        // If not linked
         if (!pdc.has(KEY_LINKED_LOC, PersistentDataType.STRING)) {
             player.sendMessage(MessageFile.get("furnace-unlinked"));
             e.setCancelled(true);
@@ -237,7 +262,7 @@ public class PortableFurnaceItem implements Listener {
         }
     }
 
-    // Save GUI contents back into the item when closed
+    // Save GUI back into the item when closed
     @EventHandler
     public void onClose(InventoryCloseEvent e) {
         Inventory inv = e.getInventory();
@@ -265,8 +290,6 @@ public class PortableFurnaceItem implements Listener {
 
             ItemSerialization.saveItemStackArray(pdc, KEY_INV, arr);
 
-            // also store cooking/burning state back into PDC if you want (we keep those keys too)
-            // (Assume processAllPlayers manages these keys on the item for live items.)
             item.setItemMeta(meta);
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -286,10 +309,8 @@ public class PortableFurnaceItem implements Listener {
         return in;
     }
 
-    /** Call this once per second from your main plugin (scheduler). */
     public static void processAllPlayers() {
         for (Player player : Bukkit.getOnlinePlayers()) {
-            // Check entire inventory + offhand
             PlayerInventory pInv = player.getInventory();
             for (int i = 0; i < pInv.getSize(); i++) {
                 ItemStack it = pInv.getItem(i);
@@ -325,27 +346,22 @@ public class PortableFurnaceItem implements Listener {
             // find recipe result
             ItemStack result = findSmeltResult(input);
             if (result == null) {
-                // no recipe -> reset cook
                 cook = 0;
                 pdc.set(KEY_COOK, PersistentDataType.INTEGER, cook);
                 item.setItemMeta(meta);
                 return;
             }
 
-            // if not burning, consume fuel if available
             if (burn <= 0) {
                 if (fuel != null && FUEL_TIMES.containsKey(fuel.getType())) {
                     int fuelTicks = FUEL_TIMES.get(fuel.getType());
                     burnTotal = fuelTicks;
                     burn = burnTotal;
-                    // consume one fuel unit
                     fuel.setAmount(fuel.getAmount() - 1);
                     if (fuel.getAmount() <= 0) fuel = null;
                 } else {
-                    // can't burn
                     pdc.set(KEY_BURN, PersistentDataType.INTEGER, 0);
                     pdc.set(KEY_BURN_TOTAL, PersistentDataType.INTEGER, 0);
-                    // save and exit
                     arr[0] = limitInputStack(input);
                     arr[1] = fuel;
                     arr[2] = output;
@@ -355,14 +371,12 @@ public class PortableFurnaceItem implements Listener {
                 }
             }
 
-            // if we have input and burning, progress cook
             if (input != null && burn > 0) {
                 if (cookTotal <= 0) cookTotal = 10;
                 cook++;
                 burn--;
 
                 if (cook >= cookTotal) {
-                    // attempt to put result into output
                     if (output == null) {
                         output = result.clone();
                     } else if (output.isSimilar(result)) {
@@ -370,11 +384,9 @@ public class PortableFurnaceItem implements Listener {
                         int toAdd = Math.min(space, result.getAmount());
                         output.setAmount(output.getAmount() + toAdd);
                     } else {
-                        // output blocked; hold cook at max
                         cook = cookTotal;
                     }
 
-                    // consume input
                     int consumed = result.getAmount();
                     int newAmt = input.getAmount() - consumed;
                     if (newAmt <= 0) {
@@ -387,7 +399,6 @@ public class PortableFurnaceItem implements Listener {
                 }
             }
 
-            // persist state back into PDC
             pdc.set(KEY_BURN, PersistentDataType.INTEGER, Math.max(burn, 0));
             pdc.set(KEY_BURN_TOTAL, PersistentDataType.INTEGER, Math.max(burnTotal, 0));
             pdc.set(KEY_COOK, PersistentDataType.INTEGER, Math.max(cook, 0));
