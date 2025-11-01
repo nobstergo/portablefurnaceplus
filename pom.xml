@@ -11,7 +11,7 @@
     <packaging>jar</packaging>
 
     <name>PortableFurnacePlus</name>
-    <description>Smelt resources directly in your inventory.</description>
+    <description>Your personal portable furnace.</description>
 
     <repositories>
         <repository>
